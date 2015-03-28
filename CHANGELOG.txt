@@ -1,0 +1,48 @@
+DarkDesktop
+by vhanla 
+http://apps.codigobit.info
+for Windows
+------------
+12-19-2011
+- Added support for multimonitor
+- Upgrade to XE2 (removed directdraw, fastmm4 units)
+
+04-17-2011
+- Fixbugs 
+- Improved Win+Z hotkey
+- Added FastMM4 to optimize memory management
+
+04-04-2011
+Version 1.3.1.1
+- Ajuste de intervalo de cambio
+- Ajuste de intervalo de persistencia
+- Opción mostrar OSD
+- Fixed topmost config
+- Fixed Topmost Splash
+- Fixed intelligent topmost handling 
+- Added shortcut to enable/disable (WIN+X)
+- Added combination of shortcut plus mouse position to adjust (Win+Z+CursorX)
+
+03-18-2011
+version 1.2.1.3
+- No more losing focus with other topmost application (rarely)
+
+01-08-2011
+version 1.2.1
+- BugFix - No more listed in Alt+Tab
+
+01-06-2011
+version 1.2
+- Added Hotkeys
+  Alt++ to increase light
+  Alt+- to decrease light
+- Autostart with Windows option added
+
+11-30-2010
+version 1.0
+- IniFile to use it as portable
+- Optiones added
+
+11-26-2010
+version 0.9
+- Basic background
