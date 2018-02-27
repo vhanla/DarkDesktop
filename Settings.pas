@@ -109,7 +109,7 @@ procedure TfrmSettings.btnOKClick(Sender: TObject);
 var
 ini: TIniFile;
 begin
-ini:=TIniFile.Create(ExtractFilePath(Application.ExeName)+'config.ini');
+ini:=TIniFile.Create(DarkDesktop_src.ConfigIniPath);
 try
   ini.WriteInteger('Settings','Opacity',TrackBar1.Position);
   Opacity2:=TrackBar1.Position;
@@ -197,9 +197,9 @@ ini: TIniFile;
 begin
 frmDarkDesktop.Timer1.Enabled:=false;
 //form1.FormStyle:=fsNormal;
-ini:=TIniFile.Create(ExtractFilePath(Application.ExeName)+'config.ini');
+ini:=TIniFile.Create(DarkDesktop_src.ConfigIniPath);
 try
-  if not FileExists(ExtractFilePath(Application.ExeName)+'config.ini')then
+  if not FileExists(DarkDesktop_src.ConfigIniPath)then
   ini.WriteInteger('Settings','Opacity',128);
   opacity2:=ini.ReadInteger('Settings','Opacity',128);
   TrackBar1.Position:=Opacity2;

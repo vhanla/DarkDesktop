@@ -12,6 +12,10 @@ DarkDesktop_src.pas
     in order to be available over any metro/modernui application, including the startmenu/screen
     Using dwmapi to exclude from aero peek and flip3d on windows 7 (this one not tested)
 
+  2018-02-27:
+    Added support to locate APPDATA path in order to save settings there instead of
+    failed method on ProgramFiles path since this path is admin privileged
+
   2014-12-13:
     Modified Settings.frm
       chkCrHalo : to enable or disable cursor's halo
@@ -58,7 +62,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ShellApi, Menus, IniFiles, jpeg, ExtCtrls, XPMan, Registry,
-  StdCtrls, Vcl.ImgList, GR32_Image, GR32, DWMApi;
+  StdCtrls, Vcl.ImgList, GR32_Image, GR32, DWMApi, System.ImageList, ShlObj;
 
 type
   TfrmDarkDesktop = class(TForm)
@@ -113,7 +117,7 @@ var
   frmDarkDesktop: TfrmDarkDesktop;
   fwm_TaskbarRestart : Cardinal;
   Opacity: Integer;
-  OpInterval: Integer; 
+  OpInterval: Integer;
   OpPersistent : Boolean;
   OpPersistentInterval: Integer;
   OpShowOSD : Boolean;
@@ -121,6 +125,7 @@ var
   IconoTray : TIcon;
   ActualWorkAreaWidth : Integer;
   BmpMask: TBitmap32;
+  ConfigIniPath: String;
 
   procedure SwitchToThisWindow(h1: hWnd; x: bool); stdcall;
   external user32 Name 'SwitchToThisWindow';
@@ -148,6 +153,15 @@ implementation
 uses Settings, Splash, Math;
 
 {$R *.dfm}
+
+function GetSpecialFolderPath(Folder: Integer; CanCreate: Boolean):String;
+var
+  FilePath: array[0..MAX_PATH] of char;
+begin
+  SHGetSpecialFolderPath(0, @FilePath[0], Folder, CanCreate);
+  Result := FilePath;
+end;
+
 procedure AutoStartState;
 var key: string;
      Reg: TRegIniFile;
@@ -178,7 +192,7 @@ begin
 
   if msg.HotKey = GlobalFindAtom('CTRL_WIN_ALT')then
   begin
-    
+
   if (currentMouseX <> mouse.CursorPos.X) and(Desactivar1.Caption<>'&Activar') then
   begin
     currentMouseX := Mouse.CursorPos.X;
@@ -213,7 +227,7 @@ begin
 
     if frmSettings.Showing then frmSettings.TrackBar1.Position:=Opacity;
 
-    ini:=TIniFile.Create(ExtractFilePath(Application.ExeName)+'config.ini');
+    ini:=TIniFile.Create(ConfigIniPath);
     try
       ini.WriteInteger('Settings','Opacity',Opacity);
     finally
@@ -472,10 +486,22 @@ else frmDarkDesktop.WindowState:=wsMaximized;
   OpPersistent:=true;
   OpShowOSD:=true;
   currentMouseX:=Mouse.CursorPos.X;
+
+  //AppData defining
+  if Pos(GetSpecialFolderPath(CSIDL_PROGRAM_FILESX86, False), ExtractFilePath(ParamStr(0))) = 1 then
+  begin
+    if not DirectoryExists(GetSpecialFolderPath(CSIDL_APPDATA, False)+'\DarkDesktop') then
+      CreateDir(GetSpecialFolderPath(CSIDL_APPDATA, False)+'\DarkDesktop');
+    ConfigIniPath := GetSpecialFolderPath(CSIDL_APPDATA, False)+'\DarkDesktop\config.ini';
+  end
+  else
+    ConfigIniPath := ExtractFilePath(ParamStr(0))+'config.ini';
+
+
   // Leemos datos de inicialización
-  ini:=TIniFile.Create(ExtractFilePath(Application.ExeName)+'config.ini');
+  ini:=TIniFile.Create(ConfigIniPath);
   try
-    if not FileExists(ExtractFilePath(Application.ExeName)+'config.ini')then
+    if not FileExists(ConfigIniPath)then
     ini.WriteInteger('Settings','Opacity',128);
     Opacity:=ini.ReadInteger('Settings','Opacity',128);
     OpInterval:=ini.ReadInteger('Settings','Interval',15);

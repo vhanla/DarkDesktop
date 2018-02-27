@@ -84,10 +84,18 @@ end;
 type
   TFixedStreamAdapter = class(TStreamAdapter)
   public
+    {$IFDEF VERSION<320}
     function Stat(out statstg: TStatStg; grfStatFlag: Longint): HResult; override; stdcall;
+    {$ELSE}
+    function Stat(out statstg: TStatStg; grfStatFlag: DWORD): HResult; virtual; stdcall;
+    {$ENDIF}
   end;
 
+{$IFDEF Version<320}
 function TFixedStreamAdapter.Stat(out statstg: TStatStg; grfStatFlag: Integer): HResult;
+{$else}
+function TFixedStreamAdapter.Stat(out statstg: TStatStg; grfStatFlag: DWORD): HResult;
+{$endif}
 begin
   Result := inherited Stat(statstg, grfStatFlag);
   statstg.pwcsName := nil;
