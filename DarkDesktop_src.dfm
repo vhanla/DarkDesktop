@@ -1092,6 +1092,13 @@ object frmDarkDesktop: TfrmDarkDesktop
     Shape = stCircle
     Visible = False
   end
+  object shpCaretHalo: TShape
+    Left = 48
+    Top = 393
+    Width = 377
+    Height = 200
+    Shape = stCircle
+  end
   object Image321: TImage32
     Left = 248
     Top = 8
@@ -1107,26 +1114,26 @@ object frmDarkDesktop: TfrmDarkDesktop
     Left = 136
     Top = 80
     object Configuracin1: TMenuItem
-      Caption = '&Configuraci'#243'n'
+      Caption = '&Settings'
       OnClick = Configuracin1Click
     end
     object Desactivar1: TMenuItem
-      Caption = '&Desactivar'
+      Caption = '&Disable'
       OnClick = Desactivar1Click
     end
     object IniciarjuntoconWindows1: TMenuItem
-      Caption = '&Iniciar con Windows'
+      Caption = '&Start at Logon'
       OnClick = IniciarjuntoconWindows1Click
     end
     object Acercade1: TMenuItem
-      Caption = '&Acerca de...'
+      Caption = '&About'
       OnClick = Acercade1Click
     end
     object N1: TMenuItem
       Caption = '-'
     end
     object Salir1: TMenuItem
-      Caption = '&Salir'
+      Caption = 'E&xit'
       OnClick = Salir1Click
     end
   end
@@ -1300,5 +1307,21 @@ object frmDarkDesktop: TfrmDarkDesktop
     OnTimer = tmrWorkAreaMonitorTimer
     Left = 264
     Top = 304
+  end
+  object tmrCaretHalo: TTimer
+    OnTimer = tmrCaretHaloTimer
+    Left = 400
+    Top = 512
+  end
+  object tmrShowForeground: TTimer
+    OnTimer = tmrShowForegroundTimer
+    Left = 88
+    Top = 160
+  end
+  object tmrColorize: TTimer
+    Interval = 100
+    OnTimer = tmrColorizeTimer
+    Left = 160
+    Top = 16
   end
 end

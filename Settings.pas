@@ -6,6 +6,7 @@ only desktop application non Fullscreen DirectX support
 
 CHANGELOG:
 
+
  2014-12-13
   chkCrHalo - to enable or disable cursor halo
 
@@ -53,6 +54,15 @@ type
     Image2: TImage;
     Button1: TButton;
     chkCrHalo: TCheckBox;
+    chkShowForeground: TCheckBox;
+    chkCaretHalo: TCheckBox;
+    ColorDialog1: TColorDialog;
+    ColorBox1: TColorBox;
+    Button2: TButton;
+    Label3: TLabel;
+    chkColorize: TCheckBox;
+    spHaloRadio: TSpinEdit;
+    spCaretRadio: TSpinEdit;
     procedure btnCancelClick(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
     procedure btnOKClick(Sender: TObject);
@@ -73,6 +83,11 @@ type
     procedure rbClock9Click(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure chkCrHaloClick(Sender: TObject);
+    procedure chkCaretHaloClick(Sender: TObject);
+    procedure chkShowForegroundClick(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure ColorBox1Change(Sender: TObject);
+    procedure chkColorizeClick(Sender: TObject);
   private
     { Private declarations }
     procedure CreateParams(var Params: TCreateParams);override;
@@ -94,14 +109,16 @@ uses DarkDesktop_src;
 
 procedure TfrmSettings.btnCancelClick(Sender: TObject);
 begin
-SetLayeredWindowAttributes(frmDarkDesktop.Handle,0,Opacity2, LWA_ALPHA);
+//SetLayeredWindowAttributes(frmDarkDesktop.Handle,0,Opacity2, LWA_ALPHA);
+frmDarkDesktop.AlphaBlendValue := Opacity2;
 TrackBar1.Position:=Opacity2;
 close
 end;
 
 procedure TfrmSettings.TrackBar1Change(Sender: TObject);
 begin
-SetLayeredWindowAttributes(frmDarkDesktop.Handle,0,TrackBar1.Position, LWA_ALPHA);
+//SetLayeredWindowAttributes(frmDarkDesktop.Handle,0,TrackBar1.Position, LWA_ALPHA);
+frmDarkDesktop.AlphaBlendValue := TrackBar1.Position;
 lblOpacity.Caption:=IntToStr(TrackBar1.Position);
 end;
 
@@ -109,50 +126,64 @@ procedure TfrmSettings.btnOKClick(Sender: TObject);
 var
 ini: TIniFile;
 begin
-ini:=TIniFile.Create(DarkDesktop_src.ConfigIniPath);
-try
-  ini.WriteInteger('Settings','Opacity',TrackBar1.Position);
-  Opacity2:=TrackBar1.Position;
-  //intervalo de cambio
-  ini.WriteInteger('Settings','Interval',spinInterval.Value);
-  //intervalo de persistencia
-  ini.WriteInteger('Settings','Persist',spinPersistent.Value);
-  ini.WriteBool('Settings','Persistent',chkPersistent.Checked);
-  ini.WriteBool('Settings','Indicator',chkIndicator.Checked);
+  ini:=TIniFile.Create(DarkDesktop_src.ConfigIniPath);
+  try
+    ini.WriteInteger('Settings','Opacity',TrackBar1.Position);
+    Opacity2:=TrackBar1.Position;
+    //intervalo de cambio
+    ini.WriteInteger('Settings','Interval',spinInterval.Value);
+    //intervalo de persistencia
+    ini.WriteInteger('Settings','Persist',spinPersistent.Value);
+    ini.WriteBool('Settings','Persistent',chkPersistent.Checked);
+    ini.WriteBool('Settings','Indicator',chkIndicator.Checked);
 
-  // new features
-  ini.WriteBool('Settings','ShowClock',chkClock.Checked);
-  ini.WriteBool('Settings','ShowHalo', chkCrHalo.Checked);
-  if rbClock1.Checked then
-    ini.WriteInteger('Settings','ClockPosition',1)
-  else if rbClock2.Checked then
-    ini.WriteInteger('Settings','ClockPosition',2)
-  else if rbClock3.Checked then
-    ini.WriteInteger('Settings','ClockPosition',3)
-  else if rbClock4.Checked then
-    ini.WriteInteger('Settings','ClockPosition',4)
-  else if rbClock5.Checked then
-    ini.WriteInteger('Settings','ClockPosition',5)
-  else if rbClock6.Checked then
-    ini.WriteInteger('Settings','ClockPosition',6)
-  else if rbClock7.Checked then
-    ini.WriteInteger('Settings','ClockPosition',7)
-  else if rbClock8.Checked then
-    ini.WriteInteger('Settings','ClockPosition',8)
-  else if rbClock9.Checked then
-    ini.WriteInteger('Settings','ClockPosition',9);
+    // new features
+    ini.WriteBool('Settings','ShowClock',chkClock.Checked);
+    ini.WriteBool('Settings','ShowHalo', chkCrHalo.Checked);
+    ini.WriteInteger('Settings', 'MouseHaloRadio', spHaloRadio.Value);
+    ini.WriteBool('Settings', 'CaretHalo', chkCaretHalo.Checked);
+    ini.WriteInteger('Settings', 'CaretHaloRadio', spCaretRadio.Value);
+    ini.WriteBool('Settings', 'ShowForeground', chkShowForeground.Checked);
+    ini.WriteString('Settings', 'Color', TColorToHex(OpColor));
+    ini.WriteBool('Settings', 'InteractiveColor', chkColorize.Checked);
+    if rbClock1.Checked then
+      ini.WriteInteger('Settings','ClockPosition',1)
+    else if rbClock2.Checked then
+      ini.WriteInteger('Settings','ClockPosition',2)
+    else if rbClock3.Checked then
+      ini.WriteInteger('Settings','ClockPosition',3)
+    else if rbClock4.Checked then
+      ini.WriteInteger('Settings','ClockPosition',4)
+    else if rbClock5.Checked then
+      ini.WriteInteger('Settings','ClockPosition',5)
+    else if rbClock6.Checked then
+      ini.WriteInteger('Settings','ClockPosition',6)
+    else if rbClock7.Checked then
+      ini.WriteInteger('Settings','ClockPosition',7)
+    else if rbClock8.Checked then
+      ini.WriteInteger('Settings','ClockPosition',8)
+    else if rbClock9.Checked then
+      ini.WriteInteger('Settings','ClockPosition',9);
 
-finally
-  ini.Free;
-end;
+  finally
+    ini.Free;
+  end;
 
-//aplicamos los cambios a darkdesktop
-OpInterval:=spinInterval.Value;
-OpPersistentInterval:=spinPersistent.Value;
-OpPersistent:=chkPersistent.Checked;
-OpShowOSD:=chkIndicator.Checked;
-frmDarkDesktop.Timer1.Interval:=OpPersistentInterval;
-close
+  //aplicamos los cambios a darkdesktop
+  OpInterval:=spinInterval.Value;
+  OpPersistentInterval:=spinPersistent.Value;
+  OpPersistent:=chkPersistent.Checked;
+  OpShowOSD:=chkIndicator.Checked;
+  OpCaretHalo := chkCaretHalo.Checked;
+  OpShowForeground := chkShowForeground.Checked;
+  OpInteractiveColor := chkColorize.Checked;
+  frmDarkDesktop.Timer1.Interval:=OpPersistentInterval;
+  frmDarkDesktop.Shape1.Width := spHaloRadio.Value * 2;
+  frmDarkDesktop.Shape1.Height := spHaloRadio.Value * 2;
+  frmDarkDesktop.shpCaretHalo.Width := spCaretRadio.Value * 2;
+  frmDarkDesktop.shpCaretHalo.Height := spCaretRadio.Value * 2;
+
+  close
 end;
 
 procedure TfrmSettings.Button1Click(Sender: TObject);
@@ -169,17 +200,41 @@ begin
   end;
 end;
 
+procedure TfrmSettings.Button2Click(Sender: TObject);
+begin
+  ColorDialog1.Options := [cdFullOpen, cdAnyColor];
+  if ColorDialog1.Execute then
+  begin
+    ColorBox1.Selected := ColorDialog1.Color;
+    OpColor := ColorDialog1.Color;
+    frmDarkDesktop.Color := ColorDialog1.Color;
+  end;
+end;
+
+procedure TfrmSettings.chkShowForegroundClick(Sender: TObject);
+begin
+  OpShowForeground := chkShowForeground.Checked;
+  if OpShowForeground then
+    SetForegroundBackground(frmDarkDesktop.Handle);
+end;
+
 procedure TfrmSettings.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
 //form1.FormStyle:=fsStayOnTop;
 // SetWindowLong(form1.Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) Or WS_EX_LAYERED or WS_EX_TRANSPARENT);
-if Opacity2 <> TrackBar1.Position then
-begin
-SetLayeredWindowAttributes(frmDarkDesktop.Handle,0,Opacity2, LWA_ALPHA);
-TrackBar1.Position:=Opacity2;
-end;
+  if Opacity2 <> TrackBar1.Position then
+  begin
+    //SetLayeredWindowAttributes(frmDarkDesktop.Handle,0,Opacity2, LWA_ALPHA);
+    frmDarkDesktop.AlphaBlendValue := Opacity2;
+    TrackBar1.Position:=Opacity2;
+  end;
 
-if OpPersistent then frmDarkDesktop.Timer1.Enabled:=true;
+  if OpPersistent then frmDarkDesktop.Timer1.Enabled:=true;
+  if OpShowForeground then begin
+    frmDarkDesktop.Show;
+    frmDarkDesktop.Timer1.Enabled := False;
+    frmDarkDesktop.tmrShowForeground.Enabled := True;
+  end;
 
 end;
 
@@ -195,37 +250,46 @@ procedure TfrmSettings.FormShow(Sender: TObject);
 var
 ini: TIniFile;
 begin
-frmDarkDesktop.Timer1.Enabled:=false;
-//form1.FormStyle:=fsNormal;
-ini:=TIniFile.Create(DarkDesktop_src.ConfigIniPath);
-try
-  if not FileExists(DarkDesktop_src.ConfigIniPath)then
-  ini.WriteInteger('Settings','Opacity',128);
-  opacity2:=ini.ReadInteger('Settings','Opacity',128);
-  TrackBar1.Position:=Opacity2;
-  spinInterval.Value:=ini.ReadInteger('Settings','Interval',15);
-  chkIndicator.Checked:=ini.ReadBool('Settings','Indicator',true);
-  chkPersistent.Checked:=ini.ReadBool('Settings','Persistent',true);
-  spinPersistent.Value:=ini.ReadInteger('Settings','Persist',1000);
-  chkClock.Checked := ini.ReadBool('Settings','ShowClock',False);
-  chkClockClick(Sender);
-  chkCrHalo.Checked := ini.ReadBool('Settings','ShowHalo', False);
-  chkCrHaloClick(Sender);
-  case ini.ReadInteger('Settings','ClockPosition',7) of
-    1: rbClock1.Checked := True;
-    2: rbClock2.Checked := True;
-    3: rbClock3.Checked := True;
-    4: rbClock4.Checked := True;
-    5: rbClock5.Checked := True;
-    6: rbClock6.Checked := True;
-    7: rbClock7.Checked := True;
-    8: rbClock8.Checked := True;
-    9: rbClock9.Checked := True;
+  frmDarkDesktop.Timer1.Enabled := False;
+  frmDarkDesktop.tmrShowForeground.Enabled := False;
+  //form1.FormStyle:=fsNormal;
+  ini:=TIniFile.Create(DarkDesktop_src.ConfigIniPath);
+  try
+    if not FileExists(DarkDesktop_src.ConfigIniPath)then
+    ini.WriteInteger('Settings','Opacity',128);
+    opacity2:=ini.ReadInteger('Settings','Opacity',128);
+    TrackBar1.Position:=Opacity2;
+    spinInterval.Value:=ini.ReadInteger('Settings','Interval',15);
+    chkIndicator.Checked:=ini.ReadBool('Settings','Indicator',true);
+    chkPersistent.Checked:=ini.ReadBool('Settings','Persistent',true);
+    spinPersistent.Value:=ini.ReadInteger('Settings','Persist',1000);
+    chkClock.Checked := ini.ReadBool('Settings','ShowClock',False);
+    //chkClockClick(Sender);
+    chkCrHalo.Checked := ini.ReadBool('Settings','ShowHalo', False);
+    //chkCrHaloClick(Sender);
+    chkCaretHalo.Checked := OpCaretHalo;
+    //chkCaretHaloClick(Sender);
+    chkShowForeground.Checked := OpShowForeground;
+    chkColorize.Checked := OpInteractiveColor;
+    ColorBox1.Selected := OpColor;
+    spHaloRadio.Value := ini.ReadInteger('Settings', 'MouseHaloRadio', 100);
+    spCaretRadio.Value := ini.ReadInteger('Settings', 'CaretHaloRadio', 100);
+    //chkShowForegroundClick(Sender);
+    case ini.ReadInteger('Settings','ClockPosition',7) of
+      1: rbClock1.Checked := True;
+      2: rbClock2.Checked := True;
+      3: rbClock3.Checked := True;
+      4: rbClock4.Checked := True;
+      5: rbClock5.Checked := True;
+      6: rbClock6.Checked := True;
+      7: rbClock7.Checked := True;
+      8: rbClock8.Checked := True;
+      9: rbClock9.Checked := True;
+    end;
+  finally
+    ini.Free;
   end;
-finally
-  ini.Free;
-end;
-lblOpacity.Caption:=IntToStr(TrackBar1.Position);
+  lblOpacity.Caption:=IntToStr(TrackBar1.Position);
 
 end;
 
@@ -274,11 +338,23 @@ begin
   frmDarkDesktop.UpdateClockPosition;
 end;
 
+procedure TfrmSettings.chkCaretHaloClick(Sender: TObject);
+begin
+  frmDarkDesktop.tmrCaretHalo.Enabled := chkCaretHalo.Checked;
+end;
+
 procedure TfrmSettings.chkClockClick(Sender: TObject);
 begin
   frmDarkDesktop.UpdateClockPosition;
   frmDarkDesktop.tmrClock.Enabled := chkClock.Checked;
   frmDarkDesktop.lblClock.Visible := chkClock.Checked;
+end;
+
+procedure TfrmSettings.chkColorizeClick(Sender: TObject);
+begin
+  frmDarkDesktop.tmrColorize.Enabled := chkColorize.Checked;
+  if not chkColorize.Checked then
+    frmDarkDesktop.Color := ColorBox1.Selected;
 end;
 
 procedure TfrmSettings.chkCrHaloClick(Sender: TObject);
@@ -289,8 +365,8 @@ end;
 
 procedure TfrmSettings.chkPersistentClick(Sender: TObject);
 begin
-spinPersistent.Visible:=chkPersistent.Checked;
-lblPersistent.Visible:=chkPersistent.Checked;
+  spinPersistent.Visible:=chkPersistent.Checked;
+  lblPersistent.Visible:=chkPersistent.Checked;
 end;
 
 
@@ -386,6 +462,11 @@ end;
 procedure TfrmSettings.CloseWindow(Sender: TObject);
 begin
   Hide;
+end;
+
+procedure TfrmSettings.ColorBox1Change(Sender: TObject);
+begin
+  frmDarkDesktop.Color := ColorBox1.Selected;
 end;
 
 end.

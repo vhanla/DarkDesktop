@@ -1055,8 +1055,8 @@ object frmSettings: TfrmSettings
   PixelsPerInch = 96
   TextHeight = 13
   object Image2: TImage
-    Left = 201
-    Top = 228
+    Left = 249
+    Top = 231
     Width = 103
     Height = 102
     Picture.Data = {
@@ -2013,18 +2013,25 @@ object frmSettings: TfrmSettings
   end
   object lblPersistent: TLabel
     Left = 128
-    Top = 200
-    Width = 39
+    Top = 201
+    Width = 35
     Height = 13
-    Caption = ', en ms:'
+    Caption = ', in ms:'
     Visible = False
   end
   object Label2: TLabel
     Left = 16
     Top = 160
-    Width = 208
+    Width = 181
     Height = 13
-    Caption = 'Int'#233'rvalo de cambio mediante Ctr-Alt (+/-):'
+    Caption = 'Interval step for hotkey Ctr-Alt (+/-):'
+  end
+  object Label3: TLabel
+    Left = 18
+    Top = 347
+    Width = 86
+    Height = 13
+    Caption = 'Background color:'
   end
   object TrackBar1: TTrackBar
     Left = 8
@@ -2040,16 +2047,16 @@ object frmSettings: TfrmSettings
     Top = 359
     Width = 83
     Height = 25
-    Caption = '&Aceptar'
+    Caption = '&OK'
     TabOrder = 6
     OnClick = btnOKClick
   end
   object btnCancel: TButton
-    Left = 310
+    Left = 311
     Top = 359
     Width = 81
     Height = 25
-    Caption = '&Cancelar'
+    Caption = '&Cancel'
     TabOrder = 5
     OnClick = btnCancelClick
   end
@@ -2070,16 +2077,16 @@ object frmSettings: TfrmSettings
     Top = 200
     Width = 105
     Height = 17
-    Caption = 'Modo persistente '
+    Caption = 'Persistency enabled'
     TabOrder = 3
     OnClick = chkPersistentClick
   end
   object chkIndicator: TCheckBox
     Left = 17
-    Top = 177
+    Top = 176
     Width = 177
     Height = 17
-    Caption = 'Mostrar indicador al cambiar brillo'
+    Caption = 'Show OSD on brightness change'
     TabOrder = 2
   end
   object spinInterval: TSpinEdit
@@ -2094,64 +2101,64 @@ object frmSettings: TfrmSettings
   end
   object chkClock: TCheckBox
     Left = 17
-    Top = 256
-    Width = 97
+    Top = 232
+    Width = 207
     Height = 17
-    Caption = 'Mostrar el reloj'
+    Caption = 'Show time text, set position here --->'
     TabOrder = 7
     OnClick = chkClockClick
   end
   object rbClock1: TRadioButton
-    Left = 217
-    Top = 241
+    Left = 265
+    Top = 244
     Width = 25
     Height = 17
     TabOrder = 8
     OnClick = rbClock1Click
   end
   object rbClock2: TRadioButton
-    Left = 248
-    Top = 241
+    Left = 296
+    Top = 244
     Width = 25
     Height = 17
     TabOrder = 9
     OnClick = rbClock2Click
   end
   object rbClock3: TRadioButton
-    Left = 279
-    Top = 241
+    Left = 327
+    Top = 244
     Width = 25
     Height = 17
     TabOrder = 10
     OnClick = rbClock3Click
   end
   object rbClock4: TRadioButton
-    Left = 217
-    Top = 264
+    Left = 265
+    Top = 267
     Width = 25
     Height = 17
     TabOrder = 11
     OnClick = rbClock4Click
   end
   object rbClock5: TRadioButton
-    Left = 248
-    Top = 264
+    Left = 296
+    Top = 267
     Width = 25
     Height = 17
     TabOrder = 12
     OnClick = rbClock5Click
   end
   object rbClock6: TRadioButton
-    Left = 279
-    Top = 264
+    Left = 327
+    Top = 267
     Width = 25
     Height = 17
     TabOrder = 13
     OnClick = rbClock6Click
   end
   object rbClock7: TRadioButton
-    Left = 217
-    Top = 287
+    Left = 265
+    Top = 290
     Width = 25
     Height = 17
     Checked = True
@@ -2160,41 +2167,110 @@ object frmSettings: TfrmSettings
     OnClick = rbClock7Click
   end
   object rbClock8: TRadioButton
-    Left = 248
-    Top = 287
+    Left = 296
+    Top = 290
     Width = 25
     Height = 17
     TabOrder = 15
     OnClick = rbClock8Click
   end
   object rbClock9: TRadioButton
-    Left = 279
-    Top = 287
+    Left = 327
+    Top = 290
     Width = 25
     Height = 17
     TabOrder = 16
     OnClick = rbClock9Click
   end
   object Button1: TButton
-    Left = 0
-    Top = 359
+    Left = 325
+    Top = 390
     Width = 75
     Height = 25
     Caption = 'Block me'
     TabOrder = 17
+    Visible = False
     OnClick = Button1Click
   end
   object chkCrHalo: TCheckBox
-    Left = 17
-    Top = 287
+    Left = 18
+    Top = 255
     Width = 97
     Height = 17
     Caption = 'Cursor halo'
     TabOrder = 18
     OnClick = chkCrHaloClick
   end
+  object chkShowForeground: TCheckBox
+    Left = 18
+    Top = 301
+    Width = 171
+    Height = 17
+    Caption = 'Dark layer behind foreground'
+    TabOrder = 19
+    OnClick = chkShowForegroundClick
+  end
+  object chkCaretHalo: TCheckBox
+    Left = 18
+    Top = 278
+    Width = 123
+    Height = 17
+    Caption = 'Halo on focused caret'
+    TabOrder = 20
+    OnClick = chkCaretHaloClick
+  end
+  object ColorBox1: TColorBox
+    Left = 18
+    Top = 363
+    Width = 145
+    Height = 22
+    TabOrder = 21
+    OnChange = ColorBox1Change
+  end
+  object Button2: TButton
+    Left = 169
+    Top = 359
+    Width = 40
+    Height = 25
+    Caption = '...'
+    TabOrder = 22
+    OnClick = Button2Click
+  end
+  object chkColorize: TCheckBox
+    Left = 18
+    Top = 324
+    Width = 225
+    Height = 17
+    Caption = 'Background color using foreground app icon'
+    TabOrder = 23
+    OnClick = chkColorizeClick
+  end
+  object spHaloRadio: TSpinEdit
+    Left = 184
+    Top = 255
+    Width = 50
+    Height = 22
+    MaxValue = 0
+    MinValue = 0
+    TabOrder = 24
+    Value = 0
+  end
+  object spCaretRadio: TSpinEdit
+    Left = 184
+    Top = 283
+    Width = 50
+    Height = 22
+    MaxValue = 0
+    MinValue = 0
+    TabOrder = 25
+    Value = 0
+  end
   object XPManifest1: TXPManifest
     Left = 184
     Top = 64
+  end
+  object ColorDialog1: TColorDialog
+    Left = 328
+    Top = 192
   end
 end

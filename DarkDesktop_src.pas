@@ -3,9 +3,18 @@ DarkDesktop_src.pas
   Author: vhanla (Victor Alberto Gil)
   DarkDesktop - software to adjust screen brightness
   
-  License: GNU GENERAL PUBLIC LICENSE Version 2, see LICENSE file
+  License: MIT, see LICENSE file
 
   CHANGELOG:
+  2020-10-04:
+    Merged on focus Caret Halo feature from another tool a wrote as experiment.
+    Removed SetLayeredWindowAttributes in favor of built in Delphi AlphaBlend properties
+    Added custom color for background
+    Added interactive color from foreground window
+    Added radio settings for halos
+  2020-06-20:
+    Optional Graphics32 drawing over LayeredWindow, it might be better for
+    cursor
   2014-03-12:
     Exclude it from AeroPeek
     it needs to be digitally signed in order to make it work using the manifest file in conjuction with uiaccess=true
@@ -60,9 +69,9 @@ unit DarkDesktop_src;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Winapi.Windows, Winapi.Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ShellApi, Menus, IniFiles, jpeg, ExtCtrls, XPMan, Registry,
-  StdCtrls, Vcl.ImgList, GR32_Image, GR32, DWMApi, System.ImageList, ShlObj;
+  StdCtrls, Vcl.ImgList, GR32_Image, GR32, DWMApi, System.ImageList, ShlObj, PNGImage;
 
 type
   TfrmDarkDesktop = class(TForm)
@@ -83,6 +92,10 @@ type
     Shape1: TShape;
     tmrCrHalo: TTimer;
     tmrWorkAreaMonitor: TTimer;
+    shpCaretHalo: TShape;
+    tmrCaretHalo: TTimer;
+    tmrShowForeground: TTimer;
+    tmrColorize: TTimer;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure Salir1Click(Sender: TObject);
@@ -99,6 +112,9 @@ type
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure tmrCrHaloTimer(Sender: TObject);
     procedure tmrWorkAreaMonitorTimer(Sender: TObject);
+    procedure tmrCaretHaloTimer(Sender: TObject);
+    procedure tmrShowForegroundTimer(Sender: TObject);
+    procedure tmrColorizeTimer(Sender: TObject);
   private
     { Private declarations }
     IconData : TNotifyIconData;
@@ -107,6 +123,10 @@ type
     procedure WMHotKey(var msg: TWMHotKey); message WM_HOTKEY;
     procedure WndProc(var msg: TMessage); override;
     procedure WMDisplayChange(var Message: TWMDisplayChange);message WM_DISPLAYCHANGE;
+    procedure UpdatePNG;
+
+    function GetMostUsed(ABmp: TBitmap): TColor;
+    procedure ColorFromAppIcon(AHandle: HWND);
   public
     { Public declarations }
     procedure CreateParams(var params: TCreateParams); override;
@@ -121,6 +141,11 @@ var
   OpPersistent : Boolean;
   OpPersistentInterval: Integer;
   OpShowOSD : Boolean;
+  OpCaretHalo: Boolean;
+  OpShowForeground: Boolean = False;
+  OpColor: TColor = clBlack;
+  OpInteractiveColor: Boolean = False;
+  PrevHandle, OldHandle: HWND;
   currentMouseX : integer;
   IconoTray : TIcon;
   ActualWorkAreaWidth : Integer;
@@ -148,11 +173,32 @@ var
 
   function DwmSetWindowAttribute(hwnd:HWND; dwAttribute: DWORD; pvAttribute: Pointer; cbAttribute: DWORD): HRESULT; stdcall; external 'dwmapi.dll' name 'DwmSetWindowAttribute';
 }
+
+procedure SetForegroundBackground(AHandle: HWND);
+function TColorToHex(AColor: TColor): string;
+function HexToTColor(AColor: string): TColor;
+
+
 implementation
 
-uses Settings, Splash, Math;
+uses Settings, Splash, Math, Generics.Defaults, Generics.Collections;
 
 {$R *.dfm}
+
+function TColorToHex(AColor: TColor): string;
+begin
+  Result := IntToHex(GetRValue(AColor), 2) +
+            IntToHex(GetGValue(AColor), 2) +
+            IntToHex(GetBValue(AColor), 2);
+end;
+
+function HexToTColor(AColor: string): TColor;
+begin
+  Result := RGB(
+              StrToInt('$' + Copy(AColor, 1, 2)),
+              StrToInt('$' + Copy(AColor, 3, 2)),
+              StrToInt('$' + Copy(AColor, 5, 2)));
+end;
 
 function GetSpecialFolderPath(Folder: Integer; CanCreate: Boolean):String;
 var
@@ -223,7 +269,8 @@ begin
 
   if actualOpacity <> Opacity then
   begin
-    SetLayeredWindowAttributes(frmDarkDesktop.Handle,0,Opacity, LWA_ALPHA);
+    //SetLayeredWindowAttributes(frmDarkDesktop.Handle,0,Opacity, LWA_ALPHA);
+    AlphaBlendValue := Opacity;
 
     if frmSettings.Showing then frmSettings.TrackBar1.Position:=Opacity;
 
@@ -363,6 +410,18 @@ begin
   end;
 end;
 
+procedure TfrmDarkDesktop.UpdatePNG;
+var
+  PngFile: TPNGObject;
+begin
+  PngFile := TPNGObject.CreateBlank(clBlack,32,Screen.Width, Screen.Height);
+  try
+    PngFile.CreateAlpha;
+  finally
+    PngFile.Free;
+  end;
+end;
+
 procedure TfrmDarkDesktop.WMDisplayChange(var Message: TWMDisplayChange);
 begin
 //  Width := Message.Width;
@@ -408,6 +467,14 @@ begin
   if DwmCompositionEnabled then
     DwmSetWindowAttribute(Handle, DWMWA_EXCLUDED_FROM_PEEK or DWMWA_FLIP3D_POLICY, @renderPolicy, SizeOf(Integer));
 
+  tmrCaretHalo.Interval := 100;
+  tmrCaretHalo.Enabled := False;
+  shpCaretHalo.Visible := False;
+
+  tmrShowForeground.Interval := 100;
+  tmrShowForeground.Enabled := False;
+
+  tmrColorize.Enabled := False;
 
   //showmessage(inttostr(screen.monitorcount));
   //BoundsRect:=screen.Monitors[1].BoundsRect+screen.Monitors[0].BoundsRect;
@@ -485,7 +552,14 @@ else frmDarkDesktop.WindowState:=wsMaximized;
   OpPersistentInterval:=1000;
   OpPersistent:=true;
   OpShowOSD:=true;
+  OpCaretHalo := False;
   currentMouseX:=Mouse.CursorPos.X;
+
+  //Aplicamos oscurecimiento
+  //SetWindowLong(form1.Handle,GWL_EXSTYLE,GWL)
+   SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) Or WS_EX_TRANSPARENT or WS_EX_TOOLWINDOW {and not WS_EX_APPWINDOW});
+   //SetLayeredWindowAttributes(Handle,0,opacity, LWA_ALPHA);
+
 
   //AppData defining
   if Pos(GetSpecialFolderPath(CSIDL_PROGRAM_FILESX86, False), ExtractFilePath(ParamStr(0))) = 1 then
@@ -508,17 +582,39 @@ else frmDarkDesktop.WindowState:=wsMaximized;
     OpPersistentInterval:=ini.ReadInteger('Settings','Persist',1000);
     OpPersistent:=ini.ReadBool('Settings','Persistent',true);
     OpShowOSD:=ini.ReadBool('Settings','Indicator',true);
+    OpCaretHalo := ini.ReadBool('Settings', 'CaretHalo', false);
+    OpShowForeground := ini.ReadBool('Settings', 'ShowForeground', False);
+    OpColor := HexToTColor(ini.ReadString('Settings', 'Color', '000000'));
+    Color := OpColor;
+    OpInteractiveColor := ini.ReadBool('Settings', 'InteractiveColor', False);
+    Shape1.Width := ini.ReadInteger('Settings', 'MouseHaloRadio', 100);
+    Shape1.Height := Shape1.Width;
+    shpCaretHalo.Width := ini.ReadInteger('Settings', 'CaretHaloRadio', 100);
+    shpCaretHalo.Height := shpCaretHalo.Width;
   finally
     ini.Free;
   end;
-  timer1.Enabled:=OpPersistent;
-  timer1.Interval:=OpPersistentInterval;
-  //Aplicamos oscurecimiento
-  //SetWindowLong(form1.Handle,GWL_EXSTYLE,GWL)
-   SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) Or WS_EX_LAYERED or WS_EX_TRANSPARENT or WS_EX_TOOLWINDOW {and not WS_EX_APPWINDOW});
-   SetLayeredWindowAttributes(Handle,0,opacity, LWA_ALPHA);
+    tmrCaretHalo.Enabled := OpCaretHalo;
+    if not OpShowForeground then
+    begin
+      timer1.Enabled := OpPersistent;
+      timer1.Interval := OpPersistentInterval;
+    end
+    else
+    begin
+      timer1.Enabled := False;
+      Show;
+      tmrShowForeground.Enabled := True;
+    end;
 
-   SetWindowPos(Handle,HWND_TOPMOST,Left,Top,Width, Height,SWP_NOMOVE or SWP_NOACTIVATE or SWP_NOSIZE);
+    tmrColorize.Enabled := OpInteractiveColor;
+
+   AlphaBlend := True;
+   AlphaBlendValue := Opacity;
+   TransparentColor := True;
+
+
+//   SetWindowPos(Handle,HWND_TOPMOST,Left,Top,Width, Height,SWP_NOMOVE or SWP_NOACTIVATE or SWP_NOSIZE);
 
   //for dual monitors or more
   {GetWindowRect(handle,rc);
@@ -588,7 +684,7 @@ else frmDarkDesktop.WindowState:=wsMaximized;
 
   DoubleBuffered := True;
 
-
+  TransparentColorValue := clWhite;
 end;
 
 procedure TfrmDarkDesktop.FormDestroy(Sender: TObject);
@@ -632,24 +728,97 @@ end;
 
 procedure TfrmDarkDesktop.FormShow(Sender: TObject);
 begin
-ShowWindow(application.Handle, SW_HIDE);
+  ShowWindow(application.Handle, SW_HIDE);
+end;
+
+function TfrmDarkDesktop.GetMostUsed(ABmp: TBitmap): TColor;
+type
+  PRGBTripleArray = ^TRGBTripleArray;
+  TRGBTripleArray = array[0..1023] of TRGBTriple;
+var
+  I, J: Integer;
+  LBmpScanLine: PRGBTripleArray;
+  LColors: TDictionary<TColor, Integer>;
+  LCount: Integer;
+  LColor: TColor;
+begin
+  Result := clBlack; // by default is black
+  LColors := TDictionary<TColor,Integer>.Create;
+  try
+    for J := 0 to ABmp.Height - 1 do
+    begin
+      LBmpScanLine := ABmp.ScanLine[J];
+      for I := 0 to ABmp.Width - 1 do
+      begin
+        LColor := RGB(LBmpScanLine[I].rgbtRed,
+                      LBmpScanLine[I].rgbtGreen,
+                      LBmpScanLine[I].rgbtBlue);
+        if LColors.ContainsKey(LColor) then
+          LColors.Items[LColor] := LColors.Items[LColor] + 1
+        else
+          LColors.Add(LColor, 1);
+      end;
+    end;
+
+    LCount := LColors.ToArray[0].Value;
+    for LColor in LColors.Keys do
+      if LColors.TryGetValue(LColor, I) and (I > LCount) then
+        Result := LColor;
+  finally
+    LColors.Free;
+  end;
 end;
 
 procedure TfrmDarkDesktop.Salir1Click(Sender: TObject);
 begin
-close
+  Close;
 end;
 
 procedure TfrmDarkDesktop.Acercade1Click(Sender: TObject);
 begin
-with TFormSplash.Create(application)do
-execute;
+  with TFormSplash.Create(Application)do
+    Execute;
+end;
+
+procedure TfrmDarkDesktop.ColorFromAppIcon(AHandle: HWND);
+var
+  LIcon: HICON;
+  res: DWORD;
+  LPic: TPicture;
+  LBmp: TBitmap;
+begin
+  LIcon := GetClassLong(AHandle, GCL_HICONSM);
+  if LIcon = 0 then
+    LIcon := GetClassLong(AHandle, GCL_HICON);
+  if LIcon = 0 then
+    LIcon := SendMessageTimeout(AHandle, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG, 100, res);
+  if LIcon = 0 then
+    LIcon := SendMessageTimeout(AHandle, WM_GETICON, ICON_BIG, 0, SMTO_ABORTIFHUNG, 100, res);
+  if LIcon = 0 then
+    LIcon := SendMessageTimeout(AHandle, WM_GETICON, ICON_SMALL2, 0, SMTO_ABORTIFHUNG, 100, res);
+  if LIcon = 0 then Exit; // was not possible to get the icon from window
+
+  LPic := TPicture.Create;
+  LBmp := TBitmap.Create;
+  try
+    LPic.Icon.Handle := LIcon;
+    LBmp.PixelFormat := pf24bit;
+    LBmp.Width := LPic.Icon.Width;
+    LBmp.Height := LPic.Icon.Height;
+    LBmp.Canvas.Draw(0, 0, LPic.Icon);
+    Color := GetMostUsed(LBmp);
+    if Color = clWhite then
+      Color := clBlack;
+  finally
+    LBmp.Free;
+    LPic.Free;
+  end;
 end;
 
 procedure TfrmDarkDesktop.Configuracin1Click(Sender: TObject);
 begin
-timer1.Enabled:=false;
-frmSettings.Show//Modal
+  timer1.Enabled:=false;
+  frmSettings.Show//Modal
 end;
 
 procedure RegAutoStart;
@@ -701,22 +870,42 @@ begin
   Result := (GetWindowLong(hWindow, GWL_EXSTYLE) and WS_EX_TOPMOST) <> 0 
 end;
 
+procedure SetForegroundBackground(AHandle: HWND);
+var
+  fw, res: HWND;
+  fpid, pid: DWORD;
+begin
+  pid := GetWindowThreadProcessId(AHandle, nil);
+  fw := GetForegroundWindow;
+  fpid := GetWindowThreadProcessId(fw, nil);
+  if pid <> fpid then
+  begin
+    SetWindowPos(AHandle, fw, 0, 0, 0, 0, SWP_NOSIZE or SWP_NOMOVE or SWP_NOACTIVATE);
+  end;
+
+  res := GetForegroundWindow;
+  if res <> fw then
+    SetWindowPos(fw, HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE or SWP_NOMOVE or SWP_NOACTIVATE);
+end;
+
 procedure TfrmDarkDesktop.Timer1Timer(Sender: TObject);
 begin
 //form1.color:=Random(255);
 //  form1.Hide;
 //    Application.BringToFront;
-try
-if frmSettings.Showing then timer1.Enabled:=false;
-except
-end;
+  try
+    if frmSettings.Showing then timer1.Enabled:=false;
+  except
+  end;
 //if (OpPersistent) and (not FormSplash.Showing) then
 
-if (OpPersistent) then
-try
-  frmDarkDesktop.Show;
-except
-end;
+  if (OpPersistent) then
+  try
+    if FormStyle <> fsStayOnTop then
+      FormStyle := fsStayOnTop;
+    frmDarkDesktop.Show;
+  except
+  end;
 
 {  if not IsWindowOnTop(FindWindow('DarkDesktopClass',nil))then
   begin
@@ -727,11 +916,45 @@ end;
 
 procedure TfrmDarkDesktop.Timer2Timer(Sender: TObject);
 begin
-try
-frmDarkDesktop.lblOpacityChange.Visible:=false;
-timer2.Enabled:=false;
-except
+  try
+    frmDarkDesktop.lblOpacityChange.Visible:=false;
+    timer2.Enabled:=false;
+  except
+  end;
 end;
+
+procedure TfrmDarkDesktop.tmrCaretHaloTimer(Sender: TObject);
+var
+  pos: TPoint;
+  gui: tagGUITHREADINFO;
+  rc: TRect;
+  clsName: array[0..255] of Char;
+begin
+  gui.cbSize := SizeOf(gui);
+  GetGUIThreadInfo(0, gui);
+
+  GetClassName(gui.hwndActive, clsName, 255);
+
+  if (gui.flags and 1 = 1) or (clsName = 'ConsoleWindowClass') then
+  begin
+    //Color := clBlack;
+    GetCaretPos(pos);
+    shpCaretHalo.Visible := True;
+    pos.X := gui.rcCaret.Left;
+    pos.Y := gui.rcCaret.Bottom;
+
+    Winapi.Windows.ClientToScreen(gui.hwndCaret, pos);
+
+    shpCaretHalo.Left := pos.X - shpCaretHalo.Width div 2;
+    shpCaretHalo.Top := pos.Y - shpCaretHalo.Height div 2;
+    //#TODO maybe add also focus rect usage
+  end
+  else
+  begin
+    // incase you only want to show dark layer when caret is focused #TODO
+    //Color := clWhite;
+    shpCaretHalo.Visible := False;
+  end;
 end;
 
 procedure TfrmDarkDesktop.tmrClockTimer(Sender: TObject);
@@ -760,6 +983,18 @@ begin
   lblClock.Caption := IntToTimeStr(Hora.wHour,True)+':'+IntToTimeStr(Hora.wMinute)+':'+IntToTimeStr(Hora.wSecond); //DateTimeToStr(SystemTimeToDateTime(Hora));
 end;
 
+procedure TfrmDarkDesktop.tmrColorizeTimer(Sender: TObject);
+var
+  fw: HWND;
+begin
+  fw := GetForegroundWindow;
+  if fw <> OldHandle then
+  begin
+    OldHandle := fw;
+    ColorFromAppIcon(fw);
+  end;
+end;
+
 procedure TfrmDarkDesktop.tmrCrHaloTimer(Sender: TObject);
 var
   P: TPoint;
@@ -771,6 +1006,23 @@ begin
     Shape1.Top  := P.Y - Shape1.Height div 2;
   except
 
+  end;
+end;
+
+procedure TfrmDarkDesktop.tmrShowForegroundTimer(Sender: TObject);
+var
+  fw: HWND;
+begin
+  if OpShowForeground then
+  begin
+    if FormStyle <> fsNormal then
+      FormStyle := fsNormal;
+    fw := GetForegroundWindow;
+    if PrevHandle <> fw then
+    begin
+      PrevHandle := fw;
+      SetForegroundBackground(Handle);
+    end;
   end;
 end;
 
@@ -787,7 +1039,7 @@ procedure TfrmDarkDesktop.Desactivar1Click(Sender: TObject);
 begin
     if Timer1.Enabled then begin
       frmDarkDesktop.Hide;
-      Desactivar1.Caption:='&Activar';
+      Desactivar1.Caption:='&Enable';
       Timer1.Enabled:=false;
       ImageList1.GetIcon(0, IconoTray);
       IconData.hIcon := IconoTray.Handle;
@@ -795,7 +1047,7 @@ begin
     end
     else begin
       frmDarkDesktop.Show;
-      Desactivar1.Caption:='&Desactivar';
+      Desactivar1.Caption:='&Disable';
       Timer1.Enabled:=true;
       ImageList1.GetIcon(1, IconoTray);
       IconData.hIcon := IconoTray.Handle;
