@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{1C462244-8503-4718-9507-4605C07C77F4}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="DarkDesktop.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="DarkDesktopMouseHook.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="DarkDesktop">
+        <MSBuild Projects="DarkDesktop.dproj"/>
+    </Target>
+    <Target Name="DarkDesktop:Clean">
+        <MSBuild Projects="DarkDesktop.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DarkDesktop:Make">
+        <MSBuild Projects="DarkDesktop.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="DarkDesktopMouseHook">
+        <MSBuild Projects="DarkDesktopMouseHook.dproj"/>
+    </Target>
+    <Target Name="DarkDesktopMouseHook:Clean">
+        <MSBuild Projects="DarkDesktopMouseHook.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DarkDesktopMouseHook:Make">
+        <MSBuild Projects="DarkDesktopMouseHook.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="DarkDesktop;DarkDesktopMouseHook"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="DarkDesktop:Clean;DarkDesktopMouseHook:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="DarkDesktop:Make;DarkDesktopMouseHook:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
