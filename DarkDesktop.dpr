@@ -9,13 +9,14 @@ GDIPObj.pas
 program DarkDesktop;
 
 uses
-///  FastMM4,
   Forms,
   Windows,
   Messages,
   DarkDesktop_src in 'DarkDesktop_src.pas' {frmDarkDesktop},
   Settings in 'Settings.pas' {frmSettings},
-  Splash in 'Splash.pas' {FormSplash};
+  Splash in 'Splash.pas' {FormSplash},
+  Vcl.Themes,
+  Vcl.Styles;
 
 {$R *.res}
 const
@@ -32,8 +33,9 @@ begin
   end;
 
   Application.Initialize;
+  TStyleManager.TrySetStyle('WinDark');
   Application.Title := 'DarkDesktop';
-  Application.ShowMainForm :=false;
+  Application.ShowMainForm := True;
   Application.CreateForm(TfrmDarkDesktop, frmDarkDesktop);
   Application.CreateForm(TfrmSettings, frmSettings);
   Application.CreateForm(TFormSplash, FormSplash);
