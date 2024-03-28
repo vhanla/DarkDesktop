@@ -6,6 +6,8 @@ DarkDesktop_src.pas
   License: MIT, see LICENSE file
 
   CHANGELOG:
+  2024-03-28:
+    Add mouse hook for better mouse tracking
   2020-10-04:
     Merged on focus Caret Halo feature from another tool a wrote as experiment.
     Removed SetLayeredWindowAttributes in favor of built in Delphi AlphaBlend properties
@@ -96,6 +98,7 @@ type
     tmrCaretHalo: TTimer;
     tmrShowForeground: TTimer;
     tmrColorize: TTimer;
+    Shape2: TShape;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure Salir1Click(Sender: TObject);
@@ -119,11 +122,13 @@ type
     { Private declarations }
     IconData : TNotifyIconData;
     procedure Iconito(var msg: TMessage); message WM_USER+1;
-    procedure WMShowWindow(var msg: TWMShowWindow);
+    procedure WMShowWindow(var msg: TWMShowWindow); message WM_SHOWWINDOW;
     procedure WMHotKey(var msg: TWMHotKey); message WM_HOTKEY;
     procedure WndProc(var msg: TMessage); override;
     procedure WMDisplayChange(var Message: TWMDisplayChange);message WM_DISPLAYCHANGE;
     procedure UpdatePNG;
+    // handle the messages sent to this program
+    procedure WMCopyData(var msg: TWMCopyData); message WM_COPYDATA;
 
     function GetMostUsed(ABmp: TBitmap): TColor;
     procedure ColorFromAppIcon(AHandle: HWND);
@@ -154,6 +159,10 @@ var
 
   procedure SwitchToThisWindow(h1: hWnd; x: bool); stdcall;
   external user32 Name 'SwitchToThisWindow';
+
+  procedure RunHook; stdcall; external 'DarkDesktopMouseHook';
+  procedure KillHook; stdcall; external 'DarkDesktopMouseHook';
+
 
 {type DWMWINDOWATTRIBUTE = (
   DWMWA_NCRENDERING_ENABLE = 1,
@@ -322,8 +331,11 @@ begin
 //  else if (msg.LParam = WM_LBUTTONDBLCLK)  and (frmSettings.Showing = false )then
   else if (msg.LParam = WM_LBUTTONUP)  and (frmSettings.Showing = false )then
   begin
-   frmSettings.Show;//Modal
+    frmSettings.UpdatePosition;
+//    AnimateWindow(frmSettings.Handle, 200, AW_ACTIVATE or AW_CENTER);
+    frmSettings.Show;//Modal
     SwitchToThisWindow(frmSettings.Handle,True);
+//    frmSettings.Refresh;
     frmSettings.UpdatePosition;
   end;
 {  else if msg.LParam = WM_LBUTTONUP then
@@ -422,6 +434,25 @@ begin
   end;
 end;
 
+procedure TfrmDarkDesktop.WMCopyData(var msg: TWMCopyData);
+var
+  Data: PMouseHookStruct;
+  P: TPoint;
+begin
+  Data := PMouseHookStruct(msg.CopyDataStruct.lpData);
+  if (Data <> nil) and (frmSettings <> nil) and (frmSettings.chkCrHalo.Checked) then
+  begin
+    try
+      P := ScreenToClient(Mouse.CursorPos);
+
+      Shape1.Left := P.X - Shape1.Width div 2;
+      Shape1.Top  := P.Y - Shape1.Height div 2;
+    except
+
+    end;
+  end;
+end;
+
 procedure TfrmDarkDesktop.WMDisplayChange(var Message: TWMDisplayChange);
 begin
 //  Width := Message.Width;
@@ -463,6 +494,10 @@ ini: TIniFile;
   renderPolicy: integer;//DWMWINDOWATTRIBUTE;
 begin
   SetPriorityClass(GetCurrentProcess, $4000);
+  ReportMemoryLeaksOnShutdown := True;
+
+  RunHook;
+
   //exclude from aeropeek
   if DwmCompositionEnabled then
     DwmSetWindowAttribute(Handle, DWMWA_EXCLUDED_FROM_PEEK or DWMWA_FLIP3D_POLICY, @renderPolicy, SizeOf(Integer));
@@ -689,6 +724,8 @@ end;
 
 procedure TfrmDarkDesktop.FormDestroy(Sender: TObject);
 begin
+  KillHook;
+
   if IconData.Wnd <>0 then Shell_NotifyIcon(NIM_DELETE,@IconData);
   if GlobalFindAtom('ALT_PLUS')<>0 then
     UnregisterHotKey(handle,GlobalFindAtom('ALT_PLUS'));
@@ -938,7 +975,7 @@ begin
   if (gui.flags and 1 = 1) or (clsName = 'ConsoleWindowClass') then
   begin
     //Color := clBlack;
-    GetCaretPos(pos);
+//    GetCaretPos(pos);
     shpCaretHalo.Visible := True;
     pos.X := gui.rcCaret.Left;
     pos.Y := gui.rcCaret.Bottom;
@@ -948,6 +985,12 @@ begin
     shpCaretHalo.Left := pos.X - shpCaretHalo.Width div 2;
     shpCaretHalo.Top := pos.Y - shpCaretHalo.Height div 2;
     //#TODO maybe add also focus rect usage
+    shape2.Visible := frmSettings.cbCaretRect.Checked;
+    if frmSettings.cbCaretRect.Checked then
+    begin
+      GetWindowRect(gui.hwndFocus, rc);
+      shape2.BoundsRect := rc;
+    end;
   end
   else
   begin
@@ -999,14 +1042,14 @@ procedure TfrmDarkDesktop.tmrCrHaloTimer(Sender: TObject);
 var
   P: TPoint;
 begin
-  try
+{  try
     P := ScreenToClient(Mouse.CursorPos);
 
     Shape1.Left := P.X - Shape1.Width div 2;
     Shape1.Top  := P.Y - Shape1.Height div 2;
   except
 
-  end;
+  end;} //#TODO left for future usage on admin level windows, since this call ignores while being on windows with elevated privileges
 end;
 
 procedure TfrmDarkDesktop.tmrShowForegroundTimer(Sender: TObject);

@@ -6,6 +6,7 @@ object frmDarkDesktop: TfrmDarkDesktop
   ClientHeight = 600
   ClientWidth = 536
   Color = clBtnFace
+  DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -1045,14 +1046,20 @@ object frmDarkDesktop: TfrmDarkDesktop
     000000000000000000000000000000000000FFFFAC41FFFFAC410000AC410000
     AC410000AC410000AC410000AC410000AC410000AC410000AC410000AC410000
     AC410000AC410000AC41FFFFAC41FFFFAC41}
-  OldCreateOrder = False
+  StyleElements = []
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnMouseMove = FormMouseMove
   OnResize = FormResize
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
+  object Shape2: TShape
+    Left = 48
+    Top = 80
+    Width = 105
+    Height = 81
+    Shape = stRoundRect
+  end
   object lblOpacityChange: TLabel
     Left = 8
     Top = 202
@@ -1061,7 +1068,7 @@ object frmDarkDesktop: TfrmDarkDesktop
     Alignment = taCenter
     Caption = '   '
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWhite
+    Font.Color = clLime
     Font.Height = -21
     Font.Name = 'Tahoma'
     Font.Style = [fsBold]
@@ -1073,15 +1080,17 @@ object frmDarkDesktop: TfrmDarkDesktop
     Width = 248
     Height = 86
     Caption = '3:30 p.m.'
-    Color = clWhite
+    Color = clYellow
     Font.Charset = ANSI_CHARSET
-    Font.Color = clWhite
+    Font.Color = clLime
     Font.Height = -64
     Font.Name = 'Segoe UI Light'
     Font.Style = []
+    Font.Quality = fqClearTypeNatural
     ParentColor = False
     ParentFont = False
     Visible = False
+    StyleElements = [seClient, seBorder]
   end
   object Shape1: TShape
     Left = 104
