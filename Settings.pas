@@ -6,6 +6,9 @@ only desktop application non Fullscreen DirectX support
 
 CHANGELOG:
 
+ 2021-10-20
+  Changed thickframed borderless titlebar to a better alternative so it won't
+  show a padding in top
 
  2014-12-13
   chkCrHalo - to enable or disable cursor halo
@@ -63,6 +66,7 @@ type
     chkColorize: TCheckBox;
     spHaloRadio: TSpinEdit;
     spCaretRadio: TSpinEdit;
+    cbCaretRect: TCheckBox;
     procedure btnCancelClick(Sender: TObject);
     procedure TrackBar1Change(Sender: TObject);
     procedure btnOKClick(Sender: TObject);
@@ -88,10 +92,13 @@ type
     procedure Button2Click(Sender: TObject);
     procedure ColorBox1Change(Sender: TObject);
     procedure chkColorizeClick(Sender: TObject);
+  protected
+    function GetNCBorderSize: Integer;
   private
     { Private declarations }
     procedure CreateParams(var Params: TCreateParams);override;
     procedure WMNCHitTest(var Message: TWMNCHitTest); Message WM_NCHITTEST;
+    procedure WMNCCalcSize(var Message: TWMNCCalcSize); Message WM_NCCALCSIZE;
     procedure CloseWindow(Sender: TObject);
   public
     { Public declarations }
@@ -293,6 +300,33 @@ begin
 
 end;
 
+function TfrmSettings.GetNCBorderSize: Integer;
+begin
+  case BorderStyle of
+    bsSingle:
+      Result := GetSystemMetrics(SM_CYFIXEDFRAME);
+
+    bsDialog, bsToolWindow:
+      Result := GetSystemMetrics(SM_CYDLGFRAME);
+
+    bsSizeable, bsSizeToolWin:
+      Result := GetSystemMetrics(SM_CYSIZEFRAME) +
+                GetSystemMetrics(SM_CXPADDEDBORDER);
+    else
+      Result := 0;
+  end;
+
+  // Tweak for Windows 7
+  if (Win32MajorVersion < 6) or ((Win32MajorVersion = 6) and (Win32MinorVersion <= 3)) then
+  begin
+    case BorderStyle of
+      bsSingle: Dec(Result, 3);
+      bsDialog, bsToolWindow: Dec(Result, 3);
+      bsSizeable, bsSizeToolWin: Dec(Result, 2);
+    end;
+  end;
+end;
+
 procedure TfrmSettings.rbClock1Click(Sender: TObject);
 begin
   frmDarkDesktop.UpdateClockPosition;
@@ -359,7 +393,7 @@ end;
 
 procedure TfrmSettings.chkCrHaloClick(Sender: TObject);
 begin
-  frmDarkDesktop.tmrCrHalo.Enabled := chkCrHalo.Checked;
+//  frmDarkDesktop.tmrCrHalo.Enabled := chkCrHalo.Checked;
   frmDarkDesktop.Shape1.Visible := chkCrHalo.Checked;
 end;
 
@@ -440,6 +474,23 @@ begin
   inherited CreateParams(Params);
   Params.ExStyle:=Params.ExStyle and not WS_EX_TOOLWINDOW or WS_EX_APPWINDOW;
   Params.Style := Params.Style or WS_THICKFRAME;
+end;
+
+procedure TfrmSettings.WMNCCalcSize(var Message: TWMNCCalcSize);
+var
+  LTitleBarHeight: Integer;
+begin
+  inherited;
+
+  if BorderStyle = bsNone then Exit;
+
+  LTitleBarHeight := GetSystemMetrics(SM_CYCAPTION);
+
+  if WindowState = TWindowState.wsNormal then
+    Inc(LTitleBarHeight, GetNCBorderSize);
+
+  Dec(Message.CalcSize_Params.rgrc[0].Top, LTitleBarHeight + 1);
+
 end;
 
 procedure TfrmSettings.WMNCHitTest(var Message: TWMNCHitTest);

@@ -2,10 +2,9 @@ object frmSettings: TfrmSettings
   Left = 320
   Top = 150
   BorderIcons = [biMinimize, biMaximize]
-  BorderStyle = bsNone
   Caption = 'Configuraci'#243'n'
-  ClientHeight = 421
-  ClientWidth = 400
+  ClientHeight = 424
+  ClientWidth = 399
   Color = clWhite
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -1047,12 +1046,11 @@ object frmSettings: TfrmSettings
     000000000000000000000000000000000000FFFFAC41FFFFAC410000AC410000
     AC410000AC410000AC410000AC410000AC410000AC410000AC410000AC410000
     AC410000AC410000AC41FFFFAC41FFFFAC41}
-  OldCreateOrder = False
   Position = poScreenCenter
+  StyleElements = [seFont, seClient]
   OnClose = FormClose
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object Image2: TImage
     Left = 249
@@ -1438,8 +1436,9 @@ object frmSettings: TfrmSettings
   object Image1: TImage
     Left = 0
     Top = 0
-    Width = 400
+    Width = 399
     Height = 98
+    Align = alTop
     AutoSize = True
     Picture.Data = {
       0A544A504547496D61676521450000FFD8FFE100C945786966000049492A0008
@@ -1996,17 +1995,18 @@ object frmSettings: TfrmSettings
       9E69C091D0E28A29A18648E41C1F514649E49C9F7A28A6340AC57382467D0D19
       A28A063B27A6783DA8C95390707DA8A2828294315E848FA1A28A6314519238CF
       068A28285A5DC718C9C7A5145319FFD9}
+    ExplicitWidth = 400
   end
   object Label1: TLabel
-    Left = 16
-    Top = 112
-    Width = 45
+    Left = 8
+    Top = 109
+    Width = 72
     Height = 13
-    Caption = 'Opacidad'
+    Caption = 'Darkness Level'
   end
   object lblOpacity: TLabel
-    Left = 64
-    Top = 112
+    Left = 86
+    Top = 109
     Width = 11
     Height = 13
     Caption = '%'
@@ -2027,8 +2027,8 @@ object frmSettings: TfrmSettings
     Caption = 'Interval step for hotkey Ctr-Alt (+/-):'
   end
   object Label3: TLabel
-    Left = 18
-    Top = 347
+    Left = 17
+    Top = 379
     Width = 86
     Height = 13
     Caption = 'Background color:'
@@ -2039,12 +2039,14 @@ object frmSettings: TfrmSettings
     Width = 385
     Height = 25
     Max = 255
+    ShowSelRange = False
     TabOrder = 0
+    TickStyle = tsNone
     OnChange = TrackBar1Change
   end
   object btnOK: TButton
-    Left = 221
-    Top = 359
+    Left = 220
+    Top = 391
     Width = 83
     Height = 25
     Caption = '&OK'
@@ -2052,8 +2054,8 @@ object frmSettings: TfrmSettings
     OnClick = btnOKClick
   end
   object btnCancel: TButton
-    Left = 311
-    Top = 359
+    Left = 310
+    Top = 391
     Width = 81
     Height = 25
     Caption = '&Cancel'
@@ -2183,8 +2185,8 @@ object frmSettings: TfrmSettings
     OnClick = rbClock9Click
   end
   object Button1: TButton
-    Left = 325
-    Top = 390
+    Left = 310
+    Top = 159
     Width = 75
     Height = 25
     Caption = 'Block me'
@@ -2220,16 +2222,16 @@ object frmSettings: TfrmSettings
     OnClick = chkCaretHaloClick
   end
   object ColorBox1: TColorBox
-    Left = 18
-    Top = 363
+    Left = 17
+    Top = 395
     Width = 145
     Height = 22
     TabOrder = 21
     OnChange = ColorBox1Change
   end
   object Button2: TButton
-    Left = 169
-    Top = 359
+    Left = 168
+    Top = 391
     Width = 40
     Height = 25
     Caption = '...'
@@ -2264,6 +2266,15 @@ object frmSettings: TfrmSettings
     MinValue = 0
     TabOrder = 25
     Value = 0
+  end
+  object cbCaretRect: TCheckBox
+    Left = 18
+    Top = 347
+    Width = 151
+    Height = 17
+    Caption = 'Caret container rect visible'
+    TabOrder = 26
+    OnClick = chkCaretHaloClick
   end
   object XPManifest1: TXPManifest
     Left = 184
